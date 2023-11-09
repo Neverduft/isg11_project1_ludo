@@ -213,8 +213,44 @@ class LudoGame:
         return legal_moves
 
     def display_board(self):
-        # print(" TODO ?")
-        return
+        # Create a list representing the board with empty tiles
+        board = ["."] * self.BOARD_LENGTH
+        home_columns = {
+            "red": ["=" for i in range(self.HOME_LENGTH + 1)],
+            "green": ["=" for i in range(self.HOME_LENGTH + 1)],
+            "yellow": ["=" for i in range(self.HOME_LENGTH + 1)],
+            "blue": ["=" for i in range(self.HOME_LENGTH + 1)],
+        }
+
+        # Place the tokens on the board
+        for color, player in self.players.items():
+            for token in player.tokens:
+                if token.position >= 0:  # Tokens on board
+                    board[token.position] = color[0].upper()
+                elif token.position == -2:  # Tokens in home column
+                    home_columns[color][token.in_home_position] = color[0].upper()
+
+        # Display home columns
+        print("\nHome columns:", end="  ")
+        for color, column in home_columns.items():
+            print(f"{color.capitalize()}: {' '.join(column)}", end="  ")
+
+        print("")
+
+        # Tokens in base
+        print("Tokens in base:", end="  ")
+        for color, player in self.players.items():
+            tokens_in_base = sum(1 for t in player.tokens if t.position == -1)
+            print(f"{color.capitalize()}: {tokens_in_base}", end="  ")
+
+        print("")
+
+        # Display the board
+        print("Board:")
+        for tile in board:
+            print(tile, end=" ")
+
+        print("\n\n")
 
     def play_game(self):
         # Check if any player has won
@@ -236,7 +272,7 @@ class LudoGame:
 
         # Main game loop
         while not game_over():
-            print(f"{self.turn}'s turn.")
+            print(f"==> {self.turn}'s turn.")
             dice_roll = self.roll_dice()
             move = get_player_move(self.turn, dice_roll)
 
