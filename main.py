@@ -7,7 +7,7 @@ class Token:
         self.color = color
         self.position = -1  # -1 means it's not on the board yet, -2 is in-home
         self.moved_squares = 0
-        self.in_home_position = -1
+        self.in_home_position = -1  # -1 means not in-home
 
 
 class Player:
@@ -75,7 +75,7 @@ class LudoGame:
 
         # Normal move on board
         elif token.position >= 0 and moved_squares + dice_value < self.BOARD_LENGTH:
-            # Checking if there's any token of the same color on the potential new position
+            # Check if there's a token of the same color on the potential new position
             if any(t.position == candidate_position for t in player.tokens):
                 print(
                     f"Illegal move! {player_color} already has a token at position {candidate_position}."
@@ -86,7 +86,7 @@ class LudoGame:
             token.moved_squares += dice_value
             print(f"{player_color} moved a token to position {token.position}")
 
-        # Move into/inside of home
+        # Move into/within home
         elif (
             token.position != -1
             and moved_squares + dice_value >= self.BOARD_LENGTH
@@ -99,12 +99,14 @@ class LudoGame:
                 and t.in_home_position != token.in_home_position
             ]
 
+            # Prevent moving token if there's a token of the same color on the potential new position
             if candidate_home_position in occupied_home_positions:
                 print(
                     f"Illegal move! {player_color} cannot move to home position {candidate_home_position} as it's occupied."
                 )
                 return False
 
+            # Prevent skipping over tokens in home
             if any(
                 occupied_position < candidate_home_position
                 for occupied_position in occupied_home_positions
@@ -126,6 +128,7 @@ class LudoGame:
             print(f"Illegal move attempted by {player_color}.")
             return False
 
+        # Handle capturing tokens
         if token.position >= 0:
             for other_color, other_player in self.players.items():
                 if other_color != player_color:
@@ -140,11 +143,11 @@ class LudoGame:
         return True
 
     # TODO check enforcement of spawn
-    # TODO Comments
     def get_legal_moves(self, player_color, dice_value):
         player = self.players[player_color]
         legal_moves = []
 
+        # Perform similar checks as in move_token to get legal moves
         for idx, token in enumerate(player.tokens):
             candidate_position = (token.position + dice_value) % self.BOARD_LENGTH
             moved_squares = token.moved_squares
@@ -180,7 +183,7 @@ class LudoGame:
                 if not capturing:
                     legal_moves.append((idx, "move_to_position", candidate_position))
 
-            # Check for move into/inside of home
+            # Check for move into/within home
             elif (
                 token.position != -1
                 and moved_squares + dice_value >= self.BOARD_LENGTH
@@ -209,10 +212,11 @@ class LudoGame:
         return
 
     def play_game(self):
+        # Check if any player has won
         def game_over():
-            # Checks if any player has won
             return any(player.has_won() for player in self.players.values())
 
+        # Get move for current player
         def get_player_move(player_color, dice_roll):
             player = self.players[player_color]
             print(f"{player_color} rolled a {dice_roll}")
@@ -225,6 +229,7 @@ class LudoGame:
         print("Game start!")
         self.display_board()
 
+        # Main game loop
         while not game_over():
             print(f"{self.turn}'s turn.")
             dice_roll = self.roll_dice()
@@ -246,6 +251,6 @@ class LudoGame:
                 self.next_turn()
 
 
-# Example usage:
+# Start game:
 game = LudoGame()
 game.play_game()
