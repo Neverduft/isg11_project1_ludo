@@ -115,9 +115,9 @@ class LudoGame:
                 return False
 
             if token.in_home_position == -1:
-                print(f"{player_color} moved a token inside of home.")
-            else:
                 print(f"{player_color} moved a token into home.")
+            else:
+                print(f"{player_color} moved a token within home.")
 
             token.position = -2
             token.moved_squares += dice_value
