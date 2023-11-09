@@ -1,6 +1,7 @@
 import random
 
 
+## Game Objects
 class Token:
     def __init__(self, color):
         self.color = color
@@ -10,26 +11,40 @@ class Token:
 
 
 class Player:
-    def __init__(self, color, starting_position):
+    def __init__(self, color, starting_position, strategy):
         self.color = color
         self.tokens = [Token(color) for _ in range(4)]
         self.starting_position = starting_position
+        self.strategy = strategy
 
+    # Winning condition is if all tokens are in-home
     def has_won(self):
-        # Winning condition is if all tokens are in-home
         return all(token.position == -2 for token in self.tokens)
 
 
+## Strategies
+class MoveStrategy:
+    def select_move(self, legal_moves, dice_roll):
+        raise NotImplementedError("This method should be overridden by subclasses")
+
+
+# Just take the first legal move for now, will be updated with new strategies TODO
+class FirstLegalMoveStrategy(MoveStrategy):
+    def select_move(self, legal_moves, dice_roll):
+        return legal_moves[0] if legal_moves else None
+
+
+## Game
 class LudoGame:
     BOARD_LENGTH = 40
     HOME_LENGTH = 4 - 1
 
     def __init__(self):
         self.players = {
-            "red": Player("red", 0),
-            "green": Player("green", 10),
-            "yellow": Player("yellow", 20),
-            "blue": Player("blue", 30),
+            "red": Player("red", 0, FirstLegalMoveStrategy()),
+            "green": Player("green", 10, FirstLegalMoveStrategy()),
+            "yellow": Player("yellow", 20, FirstLegalMoveStrategy()),
+            "blue": Player("blue", 30, FirstLegalMoveStrategy()),
         }
 
         self.turn = "red"  # Starting player
@@ -198,21 +213,22 @@ class LudoGame:
             # Checks if any player has won
             return any(player.has_won() for player in self.players.values())
 
-        def get_player_move(player_color):
-            dice_roll = self.roll_dice()
+        def get_player_move(player_color, dice_roll):
+            player = self.players[player_color]
             print(f"{player_color} rolled a {dice_roll}")
 
             legal_moves = self.get_legal_moves(player_color, dice_roll)
+            selected_move = player.strategy.select_move(legal_moves, dice_roll)
 
-            # Just take the first legal move for now, will be updated with strategies TODO
-            return legal_moves[0] if legal_moves else None, dice_roll
+            return selected_move
 
         print("Game start!")
         self.display_board()
 
         while not game_over():
             print(f"{self.turn}'s turn.")
-            move, dice_roll = get_player_move(self.turn)
+            dice_roll = self.roll_dice()
+            move = get_player_move(self.turn, dice_roll)
 
             if move:
                 successful_move = self.move_token(self.turn, move[0], dice_roll)
