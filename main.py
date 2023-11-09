@@ -288,7 +288,7 @@ class LudoGame:
                 if dice_roll != 6 or not successful_move:
                     self.next_turn()
             else:
-                print(f"No legal moves for {self.turn}, next player's turn.")
+                print(f"No legal moves for {self.turn}, next player's turn.\n\n")
                 self.next_turn()
 
 
