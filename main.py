@@ -142,10 +142,10 @@ class LudoGame:
 
         return True
 
-    # TODO check enforcement of spawn
     def get_legal_moves(self, player_color, dice_value):
         player = self.players[player_color]
         legal_moves = []
+        spawn_found = False
 
         # Perform similar checks as in move_token to get legal moves
         for idx, token in enumerate(player.tokens):
@@ -162,6 +162,7 @@ class LudoGame:
                 )
             ):
                 legal_moves.append((idx, "spawn"))
+                spawn_found = True
                 break  # Stop looking for other moves if spawn is possible
 
             # Check for normal move on the board
@@ -204,6 +205,10 @@ class LudoGame:
                         legal_moves.append((idx, "move_inside_home"))
                     else:
                         legal_moves.append((idx, "move_to_home"))
+
+        # If a spawn move is found, clear all other moves
+        if spawn_found:
+            legal_moves = [(idx, "spawn")]
 
         return legal_moves
 
