@@ -1,4 +1,10 @@
+from enum import Enum
 import random
+import os
+import time
+
+def cls():
+    os.system('cls' if os.name=='nt' else 'clear')
 
 
 ## Game Objects
@@ -9,6 +15,12 @@ class Token:
         self.moved_squares = 0
         self.in_home_position = -1  # -1 means not in-home
 
+class Moves(Enum):
+    spawn = 1
+    move_to_position = 2
+    move_to_home = 3
+    move_inside_home = 4
+    capture_move = 5
 
 class Player:
     def __init__(self, color, starting_position, strategy):
@@ -24,14 +36,47 @@ class Player:
 
 ## Strategies
 class MoveStrategy:
-    def select_move(self, legal_moves, dice_roll):
+    def select_move(self, legal_moves: list[tuple[int, Moves]], dice_roll) -> Moves:
         raise NotImplementedError("This method should be overridden by subclasses")
+    
+    def find_move(self, target: Moves, moves: list[tuple[int, Moves]]) -> int:
+        for move in moves:
+            if target.value == move[1].value:
+                return move
+        return None
+    
+        
 
 
 # Just take the first legal move for now, will be updated with new strategies TODO
 class FirstLegalMoveStrategy(MoveStrategy):
     def select_move(self, legal_moves, dice_roll):
         return legal_moves[0] if legal_moves else None
+    
+
+class AggressiveStrategy(MoveStrategy):
+    def select_move(self, legal_moves, dice_roll):
+        rankedMoves = [
+            self.find_move(Moves.capture_move, legal_moves), 
+            self.find_move(Moves.spawn, legal_moves), 
+            self.find_move(Moves.move_to_position, legal_moves), 
+            self.find_move(Moves.move_inside_home, legal_moves), 
+            self.find_move(Moves.move_to_home, legal_moves),
+        ]
+        return next((move for move in rankedMoves if move is not None), None)
+    
+
+class DefensiveStrategy(MoveStrategy):
+    def select_move(self, legal_moves, dice_roll):
+        rankedMoves = [
+            self.find_move(Moves.move_to_home, legal_moves), 
+            self.find_move(Moves.move_inside_home, legal_moves), 
+            self.find_move(Moves.move_to_position, legal_moves), 
+            self.find_move(Moves.spawn, legal_moves), 
+            self.find_move(Moves.capture_move, legal_moves), 
+        ]
+        return next((move for move in rankedMoves if move is not None), None)
+
 
 
 ## Game
@@ -39,10 +84,14 @@ class LudoGame:
     BOARD_LENGTH = 40
     HOME_LENGTH = 4 - 1
 
-    def __init__(self):
+    def __init__(self, clearConsole: bool = False, interactive: bool = False, turnTime: int = 0):
+        self.clearConsole = clearConsole
+        self.interactive = interactive
+        self.turnTime = turnTime
+
         self.players = {
-            "red": Player("red", 0, FirstLegalMoveStrategy()),
-            "green": Player("green", 10, FirstLegalMoveStrategy()),
+            "red": Player("red", 0, AggressiveStrategy()),
+            "green": Player("green", 10, DefensiveStrategy()),
             "yellow": Player("yellow", 20, FirstLegalMoveStrategy()),
             "blue": Player("blue", 30, FirstLegalMoveStrategy()),
         }
@@ -142,9 +191,9 @@ class LudoGame:
 
         return True
 
-    def get_legal_moves(self, player_color, dice_value):
+    def get_legal_moves(self, player_color, dice_value) -> list[tuple[int, Moves]]:
         player = self.players[player_color]
-        legal_moves = []
+        legal_moves: list[tuple[int, Moves]] = []
         spawn_found = False
 
         # Perform similar checks as in move_token to get legal moves
@@ -161,7 +210,7 @@ class LudoGame:
                     t.position == player.starting_position for t in player.tokens
                 )
             ):
-                legal_moves.append((idx, "spawn"))
+                legal_moves.append((idx, Moves.spawn))
                 spawn_found = True
                 break  # Stop looking for other moves if spawn is possible
 
@@ -177,12 +226,12 @@ class LudoGame:
                         for other_token in other_player.tokens:
                             if other_token.position == candidate_position:
                                 legal_moves.append(
-                                    (idx, "capture_move", candidate_position)
+                                    (idx, Moves.capture_move, candidate_position)
                                 )
                                 capturing = True
 
                 if not capturing:
-                    legal_moves.append((idx, "move_to_position", candidate_position))
+                    legal_moves.append((idx, Moves.move_to_position, candidate_position))
 
             # Check for move into/within home
             elif (
@@ -202,13 +251,13 @@ class LudoGame:
                     for occupied_position in occupied_home_positions
                 ):
                     if token.in_home_position >= 0:
-                        legal_moves.append((idx, "move_inside_home"))
+                        legal_moves.append((idx, Moves.move_inside_home))
                     else:
-                        legal_moves.append((idx, "move_to_home"))
+                        legal_moves.append((idx, Moves.move_to_home))
 
         # If a spawn move is found, clear all other moves
         if spawn_found:
-            legal_moves = [(idx, "spawn")]
+            legal_moves = [(idx, Moves.spawn)]
 
         return legal_moves
 
@@ -252,6 +301,14 @@ class LudoGame:
 
         print("\n\n")
 
+    def clearAndWaitForEnter(self):
+        if self.turnTime > 0:
+            time.sleep(self.turnTime)
+        if self.interactive:
+            input("Press enter to continue...")
+        if self.clearConsole:
+            cls()
+
     def play_game(self):
         # Check if any player has won
         def game_over():
@@ -267,8 +324,11 @@ class LudoGame:
 
             return selected_move
 
+        if(self.clearConsole):
+            cls()
         print("Game start!")
         self.display_board()
+        self.clearAndWaitForEnter()
 
         # Main game loop
         while not game_over():
@@ -288,10 +348,14 @@ class LudoGame:
                 if dice_roll != 6 or not successful_move:
                     self.next_turn()
             else:
-                print(f"No legal moves for {self.turn}, next player's turn.\n\n")
+                print(f"No legal moves for {self.turn}, next player's turn.")
+                self.display_board()
                 self.next_turn()
+            
+
+            self.clearAndWaitForEnter()
 
 
 # Start game:
-game = LudoGame()
+game = LudoGame(clearConsole=True, interactive=False, turnTime=0.01)
 game.play_game()
