@@ -122,8 +122,8 @@ class SmartStrategy(MoveStrategy):
             self.calculate_risk(token, opponents) for token in current_player.tokens
         ]
 
-        print("RISIKS:", current_risks)
-        print(legal_moves)
+        print("RISKS:", current_risks)
+        print("MOVES:", legal_moves)
 
         best_move = None
         best_risk_reduction = 0
@@ -174,6 +174,7 @@ class SmartStrategy(MoveStrategy):
         if best_move:
             return best_move
 
+        # TODO If only move_to_position available use furthest?
         # If no risk reducing move is found, use fallback priorities // could be improved ?
         rankedMoves = [
             self.find_move(Moves.move_to_home, legal_moves),
