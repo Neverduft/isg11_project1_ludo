@@ -1,4 +1,9 @@
 import random
+import os
+import time
+
+def cls():
+    os.system('cls' if os.name=='nt' else 'clear')
 
 
 ## Game Objects
@@ -39,7 +44,11 @@ class LudoGame:
     BOARD_LENGTH = 40
     HOME_LENGTH = 4 - 1
 
-    def __init__(self):
+    def __init__(self, clearConsole: bool = False, interactive: bool = False, turnTime: int = 0):
+        self.clearConsole = clearConsole
+        self.interactive = interactive
+        self.turnTime = turnTime
+
         self.players = {
             "red": Player("red", 0, FirstLegalMoveStrategy()),
             "green": Player("green", 10, FirstLegalMoveStrategy()),
@@ -252,6 +261,14 @@ class LudoGame:
 
         print("\n\n")
 
+    def clearAndWaitForEnter(self):
+        if self.turnTime > 0:
+            time.sleep(self.turnTime)
+        if self.interactive:
+            input("Press enter to continue...")
+        if self.clearConsole:
+            cls()
+
     def play_game(self):
         # Check if any player has won
         def game_over():
@@ -267,8 +284,11 @@ class LudoGame:
 
             return selected_move
 
+        if(self.clearConsole):
+            cls()
         print("Game start!")
         self.display_board()
+        self.clearAndWaitForEnter()
 
         # Main game loop
         while not game_over():
@@ -282,16 +302,21 @@ class LudoGame:
 
                 if game_over():
                     print(f"Game over! {self.turn} wins!")
+                    self.display_board()
                     break
 
                 # Player gets another turn if they roll a six and make a legal move
                 if dice_roll != 6 or not successful_move:
                     self.next_turn()
             else:
-                print(f"No legal moves for {self.turn}, next player's turn.\n\n")
+                print(f"No legal moves for {self.turn}, next player's turn.")
+                self.display_board()
                 self.next_turn()
+            
+
+            self.clearAndWaitForEnter()
 
 
 # Start game:
-game = LudoGame()
+game = LudoGame(clearConsole=True, turnTime=0.1)
 game.play_game()
