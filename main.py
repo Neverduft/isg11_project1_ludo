@@ -402,7 +402,6 @@ class LudoGame:
         # Get move for current player
         def get_player_move(player_color, dice_roll):
             player = self.players[player_color]
-            print(f"{player_color} rolled a {dice_roll}")
 
             legal_moves = self.get_legal_moves(player_color, dice_roll)
             selected_move = player.strategy.select_move(legal_moves, dice_roll, player_color, self.players.values())
@@ -419,6 +418,16 @@ class LudoGame:
         while not game_over():
             print(f"==> {self.turn}'s turn.")
             dice_roll = self.roll_dice()
+            print(f"{self.turn} rolled a {dice_roll}")
+
+            if not any(token.position >= 0 for token in self.players[self.turn].tokens):
+                if dice_roll != 6:
+                    dice_roll = self.roll_dice()
+                    print(f"{self.turn} rolled a {dice_roll}")
+                    if dice_roll != 6:
+                        dice_roll = self.roll_dice()
+                        print(f"{self.turn} rolled a {dice_roll}")
+
             move = get_player_move(self.turn, dice_roll)
 
             if move:
@@ -441,5 +450,5 @@ class LudoGame:
 
 
 # Start game:
-game = LudoGame(clearConsole=True, interactive=True, turnTime=0)
+game = LudoGame(clearConsole=False, interactive=False, turnTime=0)
 game.play_game()
