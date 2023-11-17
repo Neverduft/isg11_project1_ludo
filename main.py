@@ -59,7 +59,7 @@ class MoveStrategy:
                 return move
         return None
 
-    def calculate_risk(self, player_token, opponents: list[Player]) -> list:
+    def calculate_risk(self, player_token, opponents: list[Player]) -> int:
         risk_level = 0
 
         if player_token.position >= 0:  # Only tokens on the board are at risk
@@ -175,6 +175,7 @@ class AggressiveStrategy(MoveStrategy):
         ]
         return next((move for move in ranked_moves if move is not None), None)
 
+
 # TODO Seems to not put tokens into base?
 class DefensiveStrategy(MoveStrategy):
     def select_move(
@@ -254,12 +255,13 @@ class SmartStrategy(MoveStrategy):
             # Calculate the risk after the move
             new_risk = self.calculate_risk(hypo_token, opponents)
 
-            # TODO Use linear scaling risk reduction based on how far the token has already moved (tokens further on board are more important)
+            risk_reduction = current_risks[move[0]] - new_risk
 
-            if new_position == -2:
-                risk_reduction = 1  # Priotitise getting token into home
+            # Weight based on how far the token is
+            if risk_reduction >= 0:
+                risk_reduction += token.moved_squares / (LudoGame.BOARD_LENGTH * 10)
             else:
-                risk_reduction = current_risks[move[0]] - new_risk
+                risk_reduction -= token.moved_squares / (LudoGame.BOARD_LENGTH * 10)
 
             # If the move reduces risk and is better than previous best, select it
             if risk_reduction > best_risk_reduction:
