@@ -59,7 +59,7 @@ class MoveStrategy:
 
         if player_token.position >= 0:  # Only tokens on the board are at risk
             for opponent in opponents:
-                # Increase risk if we are on the spawn point of an opponent
+                # Increase risk if we are on the spawn point of an opponent # TODO Adjust for 3 throws
                 if opponent.starting_position == player_token.position:
                     risk_level += 1
                 for opp_token in opponent.tokens:
@@ -143,8 +143,9 @@ class SmartStrategy(MoveStrategy):
             # Calculate the risk after the move
             new_risk = self.calculate_risk(hypo_token, opponents)
 
+            # TODO Watch moved distance, linear weight?
             if new_position == -2:
-                risk_reduction = 0.5 # Slightly priotitise getting token into home
+                risk_reduction = 0.5 # Slightly priotitise getting token into home TODO
             else:
                 risk_reduction = current_risks[move[0]] - new_risk
 
@@ -471,3 +472,5 @@ class LudoGame:
 # Start game:
 game = LudoGame(clearConsole=False, interactive=False, turnTime=0.0)
 game.play_game()
+
+# TODO Stats class + log into json
