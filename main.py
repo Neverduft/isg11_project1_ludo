@@ -87,7 +87,7 @@ class MoveStrategy:
         return risk_level
 
 
-# Just take the first legal move for now, will be updated with new strategies TODO
+# This is accidentaly the old "speedrun" strategy
 class FirstLegalMoveStrategy(MoveStrategy):
     def select_move(
         self,
@@ -342,7 +342,7 @@ class LudoGame:
         player = self.players[player_color]
         token = player.tokens[token_index]
         moved_squares = token.moved_squares
-        candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH - 1
+        candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH
 
         # Check if spawning is possible and legal (no own token is on the starting position)
         if (
@@ -373,15 +373,14 @@ class LudoGame:
             and moved_squares + dice_value >= self.BOARD_LENGTH
             and candidate_home_position <= self.HOME_LENGTH
         ):
-            occupied_home_positions = [
+            occupied_home_positions_ahead = [
                 t.in_home_position
                 for t in player.tokens
-                if t.in_home_position >= 0
-                and t.in_home_position != token.in_home_position
+                if t.in_home_position > token.in_home_position and t != token
             ]
 
             # Prevent moving token if there's a token of the same color on the potential new position
-            if candidate_home_position in occupied_home_positions:
+            if candidate_home_position in occupied_home_positions_ahead:
                 print(
                     f"Illegal move! {player_color} cannot move to home position {candidate_home_position} as it's occupied."
                 )
@@ -390,7 +389,7 @@ class LudoGame:
             # Prevent skipping over tokens in home
             if any(
                 occupied_position < candidate_home_position
-                for occupied_position in occupied_home_positions
+                for occupied_position in occupied_home_positions_ahead
             ):
                 print(f"Illegal move! {player_color} cannot skip over a token in home.")
                 return False
@@ -432,7 +431,7 @@ class LudoGame:
         for idx, token in enumerate(player.tokens):
             candidate_position = (token.position + dice_value) % self.BOARD_LENGTH
             moved_squares = token.moved_squares
-            candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH - 1 # TODO fix
+            candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH
 
             # Check for spawning move
             if (
@@ -473,16 +472,18 @@ class LudoGame:
                 and moved_squares + dice_value >= self.BOARD_LENGTH
                 and candidate_home_position <= self.HOME_LENGTH
             ):
-                occupied_home_positions = [
+                occupied_home_positions_ahead = [
                     t.in_home_position
                     for t in player.tokens
-                    if t.in_home_position >= 0
-                    and t.in_home_position != token.in_home_position
+                    if t.in_home_position > token.in_home_position and t != token
                 ]
 
-                if candidate_home_position not in occupied_home_positions and not any(
-                    occupied_position < candidate_home_position
-                    for occupied_position in occupied_home_positions
+                if (
+                    candidate_home_position not in occupied_home_positions_ahead
+                    and not any(
+                        occupied_position < candidate_home_position
+                        for occupied_position in occupied_home_positions_ahead
+                    )
                 ):
                     if token.in_home_position >= 0:
                         legal_moves.append((idx, Moves.move_inside_home))
@@ -570,6 +571,11 @@ class LudoGame:
             print(f"==> {self.turn}'s turn.")
             dice_roll = self.roll_dice()
             print(f"{self.turn} rolled a {dice_roll}")
+
+            # Debugging
+            # if self.turn != "green":
+            #     self.next_turn()
+            #     continue
 
             if not any(token.position >= 0 for token in self.players[self.turn].tokens):
                 if dice_roll != 6:
