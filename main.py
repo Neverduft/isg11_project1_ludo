@@ -342,7 +342,7 @@ class LudoGame:
         player = self.players[player_color]
         token = player.tokens[token_index]
         moved_squares = token.moved_squares
-        candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH
+        candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH - 1
 
         # Check if spawning is possible and legal (no own token is on the starting position)
         if (
@@ -432,7 +432,7 @@ class LudoGame:
         for idx, token in enumerate(player.tokens):
             candidate_position = (token.position + dice_value) % self.BOARD_LENGTH
             moved_squares = token.moved_squares
-            candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH
+            candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH - 1 # TODO fix
 
             # Check for spawning move
             if (
