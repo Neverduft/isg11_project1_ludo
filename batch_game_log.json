@@ -1,0 +1,61 @@
+{
+    "games_played": 100,
+    "players": {
+        "red": {
+            "strategy": "AggressiveStrategy",
+            "stats": {
+                "turns_taken": 9839,
+                "tokens_captured": 1359,
+                "own_tokens_captured": 1058,
+                "spawns": 1343,
+                "total_squares_moved": 35378,
+                "games_won": 3,
+                "turns_until_win": 370,
+                "average_turns_until_win": 123.33333333333333,
+                "average_squares_moved": 353.78
+            }
+        },
+        "green": {
+            "strategy": "DefensiveStrategy",
+            "stats": {
+                "turns_taken": 9805,
+                "tokens_captured": 764,
+                "own_tokens_captured": 1270,
+                "spawns": 1536,
+                "total_squares_moved": 35103,
+                "games_won": 1,
+                "turns_until_win": 63,
+                "average_turns_until_win": 63.0,
+                "average_squares_moved": 351.03
+            }
+        },
+        "yellow": {
+            "strategy": "SmartStrategy",
+            "stats": {
+                "turns_taken": 9699,
+                "tokens_captured": 1004,
+                "own_tokens_captured": 885,
+                "spawns": 1259,
+                "total_squares_moved": 35046,
+                "games_won": 42,
+                "turns_until_win": 4163,
+                "average_turns_until_win": 99.11904761904762,
+                "average_squares_moved": 350.46
+            }
+        },
+        "blue": {
+            "strategy": "FirstLegalMoveStrategy",
+            "stats": {
+                "turns_taken": 9441,
+                "tokens_captured": 941,
+                "own_tokens_captured": 855,
+                "spawns": 1236,
+                "total_squares_moved": 34428,
+                "games_won": 54,
+                "turns_until_win": 5001,
+                "average_turns_until_win": 92.61111111111111,
+                "average_squares_moved": 344.28
+            }
+        }
+    }
+}
