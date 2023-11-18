@@ -176,7 +176,6 @@ class AggressiveStrategy(MoveStrategy):
         return next((move for move in ranked_moves if move is not None), None)
 
 
-# TODO Seems to not put tokens into base?
 class DefensiveStrategy(MoveStrategy):
     def select_move(
         self,
