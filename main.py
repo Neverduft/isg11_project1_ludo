@@ -8,7 +8,7 @@ import time
 
 
 def cls():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 ## Game Objects
@@ -42,27 +42,71 @@ class Player:
 
 ## Strategies
 class MoveStrategy:
-    def select_move(self, legal_moves: list[tuple[int, Moves]], dice_roll: int, player_color: str,
-                    all_players: list[Player]) -> Moves:
+    def select_move(
+        self,
+        legal_moves: list[tuple[int, Moves]],
+        dice_roll: int,
+        player_color: str,
+        all_players: list[Player],
+    ) -> Moves:
         raise NotImplementedError("This method should be overridden by subclasses")
 
-    def find_move(self, target: Moves, moves: list[tuple[int, Moves]]) -> tuple[int, Moves] | None:
+    def find_move(
+        self, target: Moves, moves: list[tuple[int, Moves]]
+    ) -> tuple[int, Moves] | None:
         for move in moves:
             if target.value == move[1].value:
                 return move
         return None
 
+    def calculate_risk(self, player_token, opponents: list[Player]) -> int:
+        risk_level = 0
 
-# Just take the first legal move for now, will be updated with new strategies TODO
+        if player_token.position >= 0:  # Only tokens on the board are at risk
+            for opponent in opponents:
+                # Increase risk if we are on the spawn point of an opponent
+                if opponent.starting_position == player_token.position:
+                    risk_level += 3
+                for opp_token in opponent.tokens:
+                    if opp_token.position >= 0:
+                        opponent_distance_to_home = (
+                            opponent.starting_position - opp_token.position
+                        ) % LudoGame.BOARD_LENGTH
+                        # WORKAROUND: starting position modulo
+                        if opponent_distance_to_home == 0:
+                            opponent_distance_to_home = 40
+                        distance_to_token = (
+                            player_token.position - opp_token.position
+                        ) % LudoGame.BOARD_LENGTH
+                        # Check if opponents home is between the enemies token and our token
+                        if opponent_distance_to_home < distance_to_token:
+                            continue
+                        # A token is at risk if an opponent token is within 6 steps behind it
+                        if 0 < distance_to_token <= 6:
+                            risk_level += 1
+        return risk_level
+
+
+# This is accidentaly the old "speedrun" strategy
 class FirstLegalMoveStrategy(MoveStrategy):
-    def select_move(self, legal_moves: list[tuple[int, Moves]], dice_roll: int, player_color: str,
-                    all_players: list[Player]):
+    def select_move(
+        self,
+        legal_moves: list[tuple[int, Moves]],
+        dice_roll: int,
+        player_color: str,
+        all_players: list[Player],
+    ):
         return legal_moves[0] if legal_moves else None
 
 
 class AggressiveStrategy(MoveStrategy):
-    def select_move(self, legal_moves: list[tuple[int, Moves]], dice_roll: int, player_color: str,
-                    all_players: list[Player]):
+    def select_move(
+        self,
+        legal_moves: list[tuple[int, Moves]],
+        dice_roll: int,
+        player_color: str,
+        all_players: list[Player],
+    ):
         if len(legal_moves) == 1:  # e.g. only "spawn" move
             return legal_moves[0]
 
@@ -87,12 +131,18 @@ class AggressiveStrategy(MoveStrategy):
                         temp_token_after_turn = deepcopy(self_token)
                         temp_token_after_turn.position += dice_roll
                         temp_token_after_turn.moved_squares += dice_roll
-                        distance = LudoGame.get_reachable_distance_between(temp_token_after_turn, other_token)
+                        distance = LudoGame.get_reachable_distance_between(
+                            temp_token_after_turn, other_token
+                        )
                         if distance == -2:  # token2 not on board
                             continue
                         elif distance == -1:  # token2 not reachable
-                            if LudoGame.get_reachable_distance_between(self_token,
-                                                                       other_token) != -1:  # but was reachable before
+                            if (
+                                LudoGame.get_reachable_distance_between(
+                                    self_token, other_token
+                                )
+                                != -1
+                            ):  # but was reachable before
                                 distances_to_enemy.append(distance)  # append the -1
                         else:
                             distances_to_enemy.append(distance)
@@ -110,7 +160,12 @@ class AggressiveStrategy(MoveStrategy):
 
         if move_weights:
             print("RED move weights:")
-            print([f"{move[1].name}[{move[0]}]: {weight}" for (move, weight) in move_weights.items()])
+            print(
+                [
+                    f"{move[1].name}[{move[0]}]: {weight}"
+                    for (move, weight) in move_weights.items()
+                ]
+            )
             return max(move_weights, key=move_weights.get)  # the move with max weight
 
         # Fallback
@@ -122,8 +177,13 @@ class AggressiveStrategy(MoveStrategy):
 
 
 class DefensiveStrategy(MoveStrategy):
-    def select_move(self, legal_moves: list[tuple[int, Moves]], dice_roll: int, player_color: str,
-                    all_players: list[Player]):
+    def select_move(
+        self,
+        legal_moves: list[tuple[int, Moves]],
+        dice_roll: int,
+        player_color: str,
+        all_players: list[Player],
+    ):
         if len(legal_moves) == 1:  # e.g. only "spawn" move
             return legal_moves[0]
 
@@ -155,12 +215,98 @@ class DefensiveStrategy(MoveStrategy):
         return next((move for move in ranked_moves if move is not None), None)
 
 
+class SmartStrategy(MoveStrategy):
+    def select_move(
+        self,
+        legal_moves: list[tuple[int, Moves]],
+        dice_roll: int,
+        player_color: str,
+        all_players: list[Player],
+    ):
+        current_player = next(
+            player for player in all_players if player.color == player_color
+        )
+        opponents = [player for player in all_players if player.color != player_color]
+
+        # Assess the current risk for each token
+        current_risks = [
+            self.calculate_risk(token, opponents) for token in current_player.tokens
+        ]
+
+        print("RISKS:", current_risks)
+        print("MOVES:", legal_moves)
+
+        best_move = None
+        best_risk_reduction = 0
+
+        for move in legal_moves:
+            token = current_player.tokens[move[0]]
+            # Calculate token's position after the move
+            new_position = (
+                (token.position + dice_roll) % LudoGame.BOARD_LENGTH
+                if move[1] == Moves.move_to_position or move[1] == Moves.capture_move
+                else -2
+            )
+            # Make a hypothetical token for risk assessment
+            hypo_token = Token(token.color)
+            hypo_token.position = new_position
+
+            # Calculate the risk after the move
+            new_risk = self.calculate_risk(hypo_token, opponents)
+
+            risk_reduction = current_risks[move[0]] - new_risk
+
+            # Weight based on how far the token is
+            if risk_reduction >= 0:
+                risk_reduction += token.moved_squares / (LudoGame.BOARD_LENGTH * 10)
+            else:
+                risk_reduction -= token.moved_squares / (LudoGame.BOARD_LENGTH * 10)
+
+            # If the move reduces risk and is better than previous best, select it
+            if risk_reduction > best_risk_reduction:
+                best_move = move
+                best_risk_reduction = risk_reduction
+
+            # If risk stays same but we can capture, select it
+            elif (
+                risk_reduction == best_risk_reduction and move[1] == Moves.capture_move
+            ):
+                best_move = move
+                best_risk_reduction = risk_reduction
+
+            # If risk stays same for the move, select it
+            elif (
+                risk_reduction == best_risk_reduction
+                and move[1] == Moves.move_to_position
+            ):
+                if best_move and best_move[1] == Moves.capture_move:
+                    continue
+                best_move = move
+                best_risk_reduction = risk_reduction
+
+        # If we found a move that reduces risk, return it
+        if best_move:
+            return best_move
+
+        # If no risk reducing move is found, use fallback priorities // could be improved ?
+        rankedMoves = [
+            self.find_move(Moves.move_to_home, legal_moves),
+            self.find_move(Moves.capture_move, legal_moves),
+            self.find_move(Moves.move_inside_home, legal_moves),
+            self.find_move(Moves.move_to_position, legal_moves),
+            self.find_move(Moves.spawn, legal_moves),
+        ]
+        return next((move for move in rankedMoves if move is not None), None)
+
+
 ## Game
 class LudoGame:
     BOARD_LENGTH = 40
     HOME_LENGTH = 4 - 1
 
-    def __init__(self, clearConsole: bool = False, interactive: bool = False, turnTime: float = 0):
+    def __init__(
+        self, clearConsole: bool = False, interactive: bool = False, turnTime: float = 0
+    ):
         self.clearConsole = clearConsole
         self.interactive = interactive
         self.turnTime = turnTime
@@ -168,7 +314,7 @@ class LudoGame:
         self.players = {
             "red": Player("red", 0, AggressiveStrategy()),
             "green": Player("green", 10, DefensiveStrategy()),
-            "yellow": Player("yellow", 20, FirstLegalMoveStrategy()),
+            "yellow": Player("yellow", 20, SmartStrategy()),
             "blue": Player("blue", 30, FirstLegalMoveStrategy()),
         }
 
@@ -194,21 +340,21 @@ class LudoGame:
     def move_token(self, player_color, token_index, dice_value):
         player = self.players[player_color]
         token = player.tokens[token_index]
-        candidate_position = (token.position + dice_value) % self.BOARD_LENGTH
         moved_squares = token.moved_squares
         candidate_home_position = moved_squares + dice_value - self.BOARD_LENGTH
 
         # Check if spawning is possible and legal (no own token is on the starting position)
         if (
-                dice_value == 6
-                and token.position == -1
-                and not any(t.position == player.starting_position for t in player.tokens)
+            dice_value == 6
+            and token.position == -1
+            and not any(t.position == player.starting_position for t in player.tokens)
         ):
             token.position = player.starting_position
             print(f"{player_color} spawned a token at position {token.position}")
 
         # Normal move on board
         elif token.position >= 0 and moved_squares + dice_value < self.BOARD_LENGTH:
+            candidate_position = (token.position + dice_value) % self.BOARD_LENGTH
             # Check if there's a token of the same color on the potential new position
             if any(t.position == candidate_position for t in player.tokens):
                 print(
@@ -222,19 +368,18 @@ class LudoGame:
 
         # Move into/within home
         elif (
-                token.position != -1
-                and moved_squares + dice_value >= self.BOARD_LENGTH
-                and candidate_home_position <= self.HOME_LENGTH
+            token.position != -1
+            and moved_squares + dice_value >= self.BOARD_LENGTH
+            and candidate_home_position <= self.HOME_LENGTH
         ):
-            occupied_home_positions = [
+            occupied_home_positions_ahead = [
                 t.in_home_position
                 for t in player.tokens
-                if t.in_home_position >= 0
-                   and t.in_home_position != token.in_home_position
+                if t.in_home_position > token.in_home_position and t != token
             ]
 
             # Prevent moving token if there's a token of the same color on the potential new position
-            if candidate_home_position in occupied_home_positions:
+            if candidate_home_position in occupied_home_positions_ahead:
                 print(
                     f"Illegal move! {player_color} cannot move to home position {candidate_home_position} as it's occupied."
                 )
@@ -242,8 +387,8 @@ class LudoGame:
 
             # Prevent skipping over tokens in home
             if any(
-                    occupied_position < candidate_home_position
-                    for occupied_position in occupied_home_positions
+                occupied_position < candidate_home_position
+                for occupied_position in occupied_home_positions_ahead
             ):
                 print(f"Illegal move! {player_color} cannot skip over a token in home.")
                 return False
@@ -289,11 +434,11 @@ class LudoGame:
 
             # Check for spawning move
             if (
-                    dice_value == 6
-                    and token.position == -1
-                    and not any(
-                t.position == player.starting_position for t in player.tokens
-            )
+                dice_value == 6
+                and token.position == -1
+                and not any(
+                    t.position == player.starting_position for t in player.tokens
+                )
             ):
                 legal_moves.append((idx, Moves.spawn))
                 spawn_found = True
@@ -301,9 +446,9 @@ class LudoGame:
 
             # Check for normal move on the board
             elif (
-                    token.position >= 0
-                    and moved_squares + dice_value < self.BOARD_LENGTH
-                    and not any(t.position == candidate_position for t in player.tokens)
+                token.position >= 0
+                and moved_squares + dice_value < self.BOARD_LENGTH
+                and not any(t.position == candidate_position for t in player.tokens)
             ):
                 capturing = False
                 for other_color, other_player in self.players.items():
@@ -316,24 +461,28 @@ class LudoGame:
                                 capturing = True
 
                 if not capturing:
-                    legal_moves.append((idx, Moves.move_to_position, candidate_position))
+                    legal_moves.append(
+                        (idx, Moves.move_to_position, candidate_position)
+                    )
 
             # Check for move into/within home
             elif (
-                    token.position != -1
-                    and moved_squares + dice_value >= self.BOARD_LENGTH
-                    and candidate_home_position <= self.HOME_LENGTH
+                token.position != -1
+                and moved_squares + dice_value >= self.BOARD_LENGTH
+                and candidate_home_position <= self.HOME_LENGTH
             ):
-                occupied_home_positions = [
+                occupied_home_positions_ahead = [
                     t.in_home_position
                     for t in player.tokens
-                    if t.in_home_position >= 0
-                       and t.in_home_position != token.in_home_position
+                    if t.in_home_position > token.in_home_position and t != token
                 ]
 
-                if candidate_home_position not in occupied_home_positions and not any(
+                if (
+                    candidate_home_position not in occupied_home_positions_ahead
+                    and not any(
                         occupied_position < candidate_home_position
-                        for occupied_position in occupied_home_positions
+                        for occupied_position in occupied_home_positions_ahead
+                    )
                 ):
                     if token.in_home_position >= 0:
                         legal_moves.append((idx, Moves.move_inside_home))
@@ -404,11 +553,13 @@ class LudoGame:
             player = self.players[player_color]
 
             legal_moves = self.get_legal_moves(player_color, dice_roll)
-            selected_move = player.strategy.select_move(legal_moves, dice_roll, player_color, self.players.values())
+            selected_move = player.strategy.select_move(
+                legal_moves, dice_roll, player_color, self.players.values()
+            )
 
             return selected_move
 
-        if (self.clearConsole):
+        if self.clearConsole:
             cls()
         print("Game start!")
         self.display_board()
@@ -419,6 +570,11 @@ class LudoGame:
             print(f"==> {self.turn}'s turn.")
             dice_roll = self.roll_dice()
             print(f"{self.turn} rolled a {dice_roll}")
+
+            # Debugging
+            # if self.turn != "green":
+            #     self.next_turn()
+            #     continue
 
             if not any(token.position >= 0 for token in self.players[self.turn].tokens):
                 if dice_roll != 6:
@@ -450,5 +606,7 @@ class LudoGame:
 
 
 # Start game:
-game = LudoGame(clearConsole=False, interactive=False, turnTime=0)
+game = LudoGame(clearConsole=False, interactive=False, turnTime=0.0)
 game.play_game()
+
+# TODO Stats class + log into json
