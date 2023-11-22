@@ -207,12 +207,12 @@ class DefensiveStrategy(MoveStrategy):
         if best_move:
             return best_move
 
-        # Fallback
+        # To Home priority
         ranked_moves = [
             self.find_move(Moves.move_to_home, legal_moves),
             self.find_move(Moves.move_inside_home, legal_moves),
         ]
-        return next((move for move in ranked_moves if move is not None), None)
+        return next((move for move in ranked_moves if move is not None), best_move)
 
 
 class SmartStrategy(MoveStrategy):
