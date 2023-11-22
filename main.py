@@ -710,18 +710,18 @@ class LudoGame:
                     batch_player_stats["turns_until_win"] += player.stats.turns_taken
 
         # Calculate averages outside of the game loop
-        for color, data in batch_stats["players"].items():
-            player_stats = data["stats"]
-            player_stats["average_turns_until_win"] = (
-                player_stats["turns_until_win"] / player_stats["games_won"]
-                if player_stats["games_won"]
-                else 0
-            )
-            player_stats["average_squares_moved"] = (
-                player_stats["total_squares_moved"] / number_of_games
-                if player_stats["turns_taken"]
-                else 0
-            )
+        # for color, data in batch_stats["players"].items():
+        #     player_stats = data["stats"]
+        #     player_stats["average_turns_until_win"] = (
+        #         player_stats["turns_until_win"] / player_stats["games_won"]
+        #         if player_stats["games_won"]
+        #         else 0
+        #     )
+        #     player_stats["average_squares_moved"] = (
+        #         player_stats["total_squares_moved"] / number_of_games
+        #         if player_stats["turns_taken"]
+        #         else 0
+        #     )
 
         # Save the batch statistics
         self.save_batch_game_log(batch_stats)
@@ -736,7 +736,7 @@ class LudoGame:
 ENABLE_CONSOLE = False
 
 # Start game:
-# game = LudoGame(clearConsole=False, interactive=False, turnTime=0.0)
+# game = LudoGame(clearConsole=False, interactive=False, turnTime=0.01)
 # game.play_game()
 
 # Start simulation:
