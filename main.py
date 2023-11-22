@@ -5,10 +5,16 @@ import math
 import random
 import os
 import time
+from datetime import datetime
 
 
 def cls():
     os.system("cls" if os.name == "nt" else "clear")
+
+
+## Custom error
+class IllegalMoveError(Exception):
+    pass
 
 
 ## Game Objects
@@ -34,10 +40,41 @@ class Player:
         self.tokens = [Token(color) for _ in range(4)]
         self.starting_position = starting_position
         self.strategy = strategy
+        self.stats = GameStats()
 
     # Winning condition is if all tokens are in-home
     def has_won(self):
         return all(token.position == -2 for token in self.tokens)
+
+
+# Additional class to hold game statistics
+class GameStats:
+    def __init__(self):
+        self.turns_taken = 0
+        self.tokens_captured = 0
+        self.own_tokens_captured = 0
+        self.spawns = 0
+        self.total_squares_moved = 0
+        self.games_won = 0
+        self.turns_until_win = 0
+
+    def to_dict(self):
+        return {
+            "turns_taken": self.turns_taken,
+            "tokens_captured": self.tokens_captured,
+            "own_tokens_captured": self.own_tokens_captured,
+            "spawns": self.spawns,
+            "total_squares_moved": self.total_squares_moved,
+            "games_won": self.games_won,
+            "turns_until_win": self.turns_until_win,
+        }
+
+    def reset(self):
+        self.turns_taken = 0
+        self.tokens_captured = 0
+        self.own_tokens_captured = 0
+        self.spawns = 0
+        self.total_squares_moved = 0
 
 
 ## Strategies
@@ -159,8 +196,8 @@ class AggressiveStrategy(MoveStrategy):
                     move_weights[move] /= len(distances_to_enemy)
 
         if move_weights:
-            print("RED move weights:")
-            print(
+            log("Aggressive move weights:")
+            log(
                 [
                     f"{move[1].name}[{move[0]}]: {weight}"
                     for (move, weight) in move_weights.items()
@@ -233,8 +270,8 @@ class SmartStrategy(MoveStrategy):
             self.calculate_risk(token, opponents) for token in current_player.tokens
         ]
 
-        print("RISKS:", current_risks)
-        print("MOVES:", legal_moves)
+        log(f"RISKS: {current_risks}")
+        log(f"MOVES: {legal_moves}")
 
         best_move = None
         best_risk_reduction = 0
@@ -299,13 +336,23 @@ class SmartStrategy(MoveStrategy):
         return next((move for move in rankedMoves if move is not None), None)
 
 
+## Custom logging
+@staticmethod
+def log(message):
+    if ENABLE_CONSOLE:
+        print(message)
+
+
 ## Game
 class LudoGame:
     BOARD_LENGTH = 40
     HOME_LENGTH = 4 - 1
 
     def __init__(
-        self, clearConsole: bool = False, interactive: bool = False, turnTime: float = 0
+        self,
+        clearConsole: bool = False,
+        interactive: bool = False,
+        turnTime: float = 0,
     ):
         self.clearConsole = clearConsole
         self.interactive = interactive
@@ -350,21 +397,22 @@ class LudoGame:
             and not any(t.position == player.starting_position for t in player.tokens)
         ):
             token.position = player.starting_position
-            print(f"{player_color} spawned a token at position {token.position}")
+            self.players[player_color].stats.spawns += 1
+            log(f"{player_color} spawned a token at position {token.position}")
 
         # Normal move on board
         elif token.position >= 0 and moved_squares + dice_value < self.BOARD_LENGTH:
             candidate_position = (token.position + dice_value) % self.BOARD_LENGTH
             # Check if there's a token of the same color on the potential new position
             if any(t.position == candidate_position for t in player.tokens):
-                print(
+                raise IllegalMoveError(
                     f"Illegal move! {player_color} already has a token at position {candidate_position}."
                 )
                 return False
 
             token.position = candidate_position
             token.moved_squares += dice_value
-            print(f"{player_color} moved a token to position {token.position}")
+            log(f"{player_color} moved a token to position {token.position}")
 
         # Move into/within home
         elif (
@@ -380,7 +428,7 @@ class LudoGame:
 
             # Prevent moving token if there's a token of the same color on the potential new position
             if candidate_home_position in occupied_home_positions_ahead:
-                print(
+                raise IllegalMoveError(
                     f"Illegal move! {player_color} cannot move to home position {candidate_home_position} as it's occupied."
                 )
                 return False
@@ -390,13 +438,15 @@ class LudoGame:
                 occupied_position < candidate_home_position
                 for occupied_position in occupied_home_positions_ahead
             ):
-                print(f"Illegal move! {player_color} cannot skip over a token in home.")
+                raise IllegalMoveError(
+                    f"Illegal move! {player_color} cannot skip over a token in home."
+                )
                 return False
 
             if token.in_home_position == -1:
-                print(f"{player_color} moved a token into home.")
+                log(f"{player_color} moved a token into home.")
             else:
-                print(f"{player_color} moved a token within home.")
+                log(f"{player_color} moved a token within home.")
 
             token.position = -2
             token.moved_squares += dice_value
@@ -404,7 +454,7 @@ class LudoGame:
 
         else:
             # If none of the above, the move is illegal
-            print(f"Illegal move attempted by {player_color}.")
+            raise IllegalMoveError(f"Illegal move attempted by {player_color}.")
             return False
 
         # Handle capturing tokens
@@ -415,9 +465,15 @@ class LudoGame:
                         if other_token.position == token.position:
                             other_token.position = -1
                             other_token.moved_squares = 0
-                            print(
+                            self.players[player_color].stats.tokens_captured += 1
+                            other_player.stats.own_tokens_captured += 1
+                            log(
                                 f"{player_color}'s token captured {other_color}'s token!"
                             )
+
+        # Logging of stats
+        self.players[player_color].stats.turns_taken += 1
+        self.players[player_color].stats.total_squares_moved += dice_value
 
         return True
 
@@ -496,6 +552,9 @@ class LudoGame:
         return legal_moves
 
     def display_board(self):
+        if not ENABLE_CONSOLE:
+            return
+
         # Create a list representing the board with empty tiles
         board = ["."] * self.BOARD_LENGTH
         home_columns = {
@@ -561,15 +620,16 @@ class LudoGame:
 
         if self.clearConsole:
             cls()
-        print("Game start!")
+
+        log("Game start!")
         self.display_board()
         self.clearAndWaitForEnter()
 
         # Main game loop
         while not game_over():
-            print(f"==> {self.turn}'s turn.")
+            log(f"==> {self.turn}'s turn.")
             dice_roll = self.roll_dice()
-            print(f"{self.turn} rolled a {dice_roll}")
+            log(f"{self.turn} rolled a {dice_roll}")
 
             # Debugging
             # if self.turn != "green":
@@ -579,10 +639,10 @@ class LudoGame:
             if not any(token.position >= 0 for token in self.players[self.turn].tokens):
                 if dice_roll != 6:
                     dice_roll = self.roll_dice()
-                    print(f"{self.turn} rolled a {dice_roll}")
+                    log(f"{self.turn} rolled a {dice_roll}")
                     if dice_roll != 6:
                         dice_roll = self.roll_dice()
-                        print(f"{self.turn} rolled a {dice_roll}")
+                        log(f"{self.turn} rolled a {dice_roll}")
 
             move = get_player_move(self.turn, dice_roll)
 
@@ -591,22 +651,95 @@ class LudoGame:
                 self.display_board()
 
                 if game_over():
-                    print(f"Game over! {self.turn} wins!")
+                    self.players[self.turn].stats.games_won += 1
+                    log(f"Game over! {self.turn} wins!")
                     break
 
                 # Player gets another turn if they roll a six and make a legal move
                 if dice_roll != 6 or not successful_move:
                     self.next_turn()
             else:
-                print(f"No legal moves for {self.turn}, next player's turn.")
+                log(f"No legal moves for {self.turn}, next player's turn.")
                 self.display_board()
                 self.next_turn()
 
             self.clearAndWaitForEnter()
 
+    def reset_game(self):
+        for player in self.players.values():
+            for token in player.tokens:
+                token.position = -1  # Reset position to not on the board
+                token.moved_squares = 0
+                token.in_home_position = -1  # Reset home position status
+            player.stats.reset()  # Reset the stats for the player
+
+    def simulate_games(self, number_of_games):
+        # Initialize batch stats with empty stats, not from player objects
+        batch_stats = {
+            "games_played": number_of_games,
+            "players": {
+                color: {
+                    "strategy": type(player.strategy).__name__,
+                    "stats": GameStats().to_dict(),
+                }
+                for color, player in self.players.items()
+            },
+        }
+
+        for game_number in range(number_of_games):
+            print(f"Starting game {game_number + 1}...")
+            self.reset_game()  # Reset the game state before starting a new game
+            self.play_game()
+
+            # Update batch stats with the stats from this game
+            for color, player in self.players.items():
+                batch_player_stats = batch_stats["players"][color]["stats"]
+
+                batch_player_stats["turns_taken"] += player.stats.turns_taken
+                batch_player_stats["tokens_captured"] += player.stats.tokens_captured
+                batch_player_stats[
+                    "own_tokens_captured"
+                ] += player.stats.own_tokens_captured
+                batch_player_stats["spawns"] += player.stats.spawns
+                batch_player_stats[
+                    "total_squares_moved"
+                ] += player.stats.total_squares_moved
+
+                if player.has_won():
+                    batch_player_stats["games_won"] += 1
+                    batch_player_stats["turns_until_win"] += player.stats.turns_taken
+
+        # Calculate averages outside of the game loop
+        # for color, data in batch_stats["players"].items():
+        #     player_stats = data["stats"]
+        #     player_stats["average_turns_until_win"] = (
+        #         player_stats["turns_until_win"] / player_stats["games_won"]
+        #         if player_stats["games_won"]
+        #         else 0
+        #     )
+        #     player_stats["average_squares_moved"] = (
+        #         player_stats["total_squares_moved"] / number_of_games
+        #         if player_stats["turns_taken"]
+        #         else 0
+        #     )
+
+        # Save the batch statistics
+        self.save_batch_game_log(batch_stats)
+
+    def save_batch_game_log(self, batch_stats):
+        # Serialize to JSON and save to a file
+        with open("batch_game_log.json", "w") as log_file:
+            json.dump(batch_stats, log_file, indent=4)
+
+
+## Global variable
+ENABLE_CONSOLE = False
 
 # Start game:
-game = LudoGame(clearConsole=False, interactive=False, turnTime=0.0)
-game.play_game()
+# game = LudoGame(clearConsole=False, interactive=False, turnTime=0.01)
+# game.play_game()
 
-# TODO Stats class + log into json
+# Start simulation:
+number_of_games = 100  # or any other number
+game_simulation = LudoGame(clearConsole=False, interactive=False, turnTime=0.0)
+game_simulation.simulate_games(number_of_games)
