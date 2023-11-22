@@ -124,8 +124,7 @@ class MoveStrategy:
         return risk_level
 
 
-# This is accidentaly the old "speedrun" strategy
-class FirstLegalMoveStrategy(MoveStrategy):
+class SpeedrunStrategy(MoveStrategy):
     def select_move(
         self,
         legal_moves: list[tuple[int, Moves]],
@@ -336,6 +335,20 @@ class SmartStrategy(MoveStrategy):
         return next((move for move in rankedMoves if move is not None), None)
 
 
+class RandomStrategy(MoveStrategy):
+    def select_move(
+        self,
+        legal_moves: list[tuple[int, Moves]],
+        dice_roll: int,
+        player_color: str,
+        all_players: list[Player],
+    ):
+        if legal_moves:
+            return random.choice(legal_moves)
+        else:
+            return None
+
+
 ## Custom logging
 @staticmethod
 def log(message):
@@ -362,7 +375,8 @@ class LudoGame:
             "red": Player("red", 0, AggressiveStrategy()),
             "green": Player("green", 10, DefensiveStrategy()),
             "yellow": Player("yellow", 20, SmartStrategy()),
-            "blue": Player("blue", 30, FirstLegalMoveStrategy()),
+            "blue": Player("blue", 30, RandomStrategy()),
+            # "blue": Player("blue", 30, SpeedrunStrategy()),
         }
 
         self.turn = "red"  # Starting player

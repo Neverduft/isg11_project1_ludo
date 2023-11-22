@@ -4,57 +4,49 @@
         "red": {
             "strategy": "AggressiveStrategy",
             "stats": {
-                "turns_taken": 9839,
-                "tokens_captured": 1359,
-                "own_tokens_captured": 1058,
-                "spawns": 1343,
-                "total_squares_moved": 35378,
-                "games_won": 3,
-                "turns_until_win": 370,
-                "average_turns_until_win": 123.33333333333333,
-                "average_squares_moved": 353.78
+                "turns_taken": 10590,
+                "tokens_captured": 1677,
+                "own_tokens_captured": 1105,
+                "spawns": 1411,
+                "total_squares_moved": 38022,
+                "games_won": 7,
+                "turns_until_win": 759
             }
         },
         "green": {
             "strategy": "DefensiveStrategy",
             "stats": {
-                "turns_taken": 9805,
-                "tokens_captured": 764,
-                "own_tokens_captured": 1270,
-                "spawns": 1536,
-                "total_squares_moved": 35103,
+                "turns_taken": 10877,
+                "tokens_captured": 856,
+                "own_tokens_captured": 1480,
+                "spawns": 1730,
+                "total_squares_moved": 39317,
                 "games_won": 1,
-                "turns_until_win": 63,
-                "average_turns_until_win": 63.0,
-                "average_squares_moved": 351.03
+                "turns_until_win": 93
             }
         },
         "yellow": {
             "strategy": "SmartStrategy",
             "stats": {
-                "turns_taken": 9699,
-                "tokens_captured": 1004,
-                "own_tokens_captured": 885,
-                "spawns": 1259,
-                "total_squares_moved": 35046,
-                "games_won": 42,
-                "turns_until_win": 4163,
-                "average_turns_until_win": 99.11904761904762,
-                "average_squares_moved": 350.46
+                "turns_taken": 10457,
+                "tokens_captured": 1226,
+                "own_tokens_captured": 928,
+                "spawns": 1315,
+                "total_squares_moved": 37690,
+                "games_won": 74,
+                "turns_until_win": 7654
             }
         },
         "blue": {
-            "strategy": "FirstLegalMoveStrategy",
+            "strategy": "RandomStrategy",
             "stats": {
-                "turns_taken": 9441,
-                "tokens_captured": 941,
-                "own_tokens_captured": 855,
-                "spawns": 1236,
-                "total_squares_moved": 34428,
-                "games_won": 54,
-                "turns_until_win": 5001,
-                "average_turns_until_win": 92.61111111111111,
-                "average_squares_moved": 344.28
+                "turns_taken": 10653,
+                "tokens_captured": 1005,
+                "own_tokens_captured": 1251,
+                "spawns": 1574,
+                "total_squares_moved": 38404,
+                "games_won": 18,
+                "turns_until_win": 1952
             }
         }
     }
