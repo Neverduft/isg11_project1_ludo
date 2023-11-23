@@ -4,49 +4,49 @@
         "red": {
             "strategy": "AggressiveStrategy",
             "stats": {
-                "turns_taken": 10590,
-                "tokens_captured": 1677,
-                "own_tokens_captured": 1105,
-                "spawns": 1411,
-                "total_squares_moved": 38022,
-                "games_won": 7,
-                "turns_until_win": 759
+                "turns_taken": 10567,
+                "tokens_captured": 1645,
+                "own_tokens_captured": 1123,
+                "spawns": 1401,
+                "total_squares_moved": 37529,
+                "games_won": 2,
+                "turns_until_win": 355
             }
         },
         "green": {
             "strategy": "DefensiveStrategy",
             "stats": {
-                "turns_taken": 10877,
-                "tokens_captured": 856,
-                "own_tokens_captured": 1480,
-                "spawns": 1730,
-                "total_squares_moved": 39317,
-                "games_won": 1,
-                "turns_until_win": 93
+                "turns_taken": 10928,
+                "tokens_captured": 862,
+                "own_tokens_captured": 1393,
+                "spawns": 1670,
+                "total_squares_moved": 39212,
+                "games_won": 2,
+                "turns_until_win": 210
             }
         },
         "yellow": {
             "strategy": "SmartStrategy",
             "stats": {
-                "turns_taken": 10457,
-                "tokens_captured": 1226,
-                "own_tokens_captured": 928,
-                "spawns": 1315,
-                "total_squares_moved": 37690,
-                "games_won": 74,
-                "turns_until_win": 7654
+                "turns_taken": 10425,
+                "tokens_captured": 1122,
+                "own_tokens_captured": 898,
+                "spawns": 1288,
+                "total_squares_moved": 37722,
+                "games_won": 71,
+                "turns_until_win": 7238
             }
         },
         "blue": {
             "strategy": "RandomStrategy",
             "stats": {
-                "turns_taken": 10653,
-                "tokens_captured": 1005,
-                "own_tokens_captured": 1251,
-                "spawns": 1574,
-                "total_squares_moved": 38404,
-                "games_won": 18,
-                "turns_until_win": 1952
+                "turns_taken": 10797,
+                "tokens_captured": 1003,
+                "own_tokens_captured": 1218,
+                "spawns": 1549,
+                "total_squares_moved": 38687,
+                "games_won": 25,
+                "turns_until_win": 2671
             }
         }
     }

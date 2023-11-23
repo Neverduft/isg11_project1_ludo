@@ -124,6 +124,7 @@ class MoveStrategy:
         return risk_level
 
 
+# TODO If captured, move token to end of list
 class SpeedrunStrategy(MoveStrategy):
     def select_move(
         self,
@@ -149,6 +150,11 @@ class AggressiveStrategy(MoveStrategy):
         capture_move = self.find_move(Moves.capture_move, legal_moves)
         if capture_move is not None:
             return capture_move
+
+        # TODO Think about including this, makes the winrate better and is logical?
+        # home_move = self.find_move(Moves.move_to_home, legal_moves)
+        # if home_move is not None:
+        #     return home_move
 
         move_weights: dict[tuple[int, Moves], float] = {}
         other_players: list[Player] = []
@@ -222,6 +228,11 @@ class DefensiveStrategy(MoveStrategy):
     ):
         if len(legal_moves) == 1:  # e.g. only "spawn" move
             return legal_moves[0]
+
+        # TODO Think about including this, makes the winrate better and is logical?
+        # home_move = self.find_move(Moves.move_to_home, legal_moves)
+        # if home_move is not None:
+        #     return home_move
 
         other_players: list[Player] = []
         for player in all_players:
@@ -366,6 +377,7 @@ class LudoGame:
         clearConsole: bool = False,
         interactive: bool = False,
         turnTime: float = 0,
+        starting_player: str = "random",
     ):
         self.clearConsole = clearConsole
         self.interactive = interactive
@@ -379,7 +391,10 @@ class LudoGame:
             # "blue": Player("blue", 30, SpeedrunStrategy()),
         }
 
-        self.turn = "red"  # Starting player
+        if starting_player == "random":
+            self.turn = random.choice(list(self.players.keys()))
+        else:
+            self.turn = starting_player
 
     @staticmethod
     def get_reachable_distance_between(token1: Token, token2: Token) -> int:
@@ -723,7 +738,7 @@ class LudoGame:
                     batch_player_stats["games_won"] += 1
                     batch_player_stats["turns_until_win"] += player.stats.turns_taken
 
-        # Calculate averages outside of the game loop
+        # Calculate averages outside of the game loop // Commented out as these will be calcuated for the evaluation probably
         # for color, data in batch_stats["players"].items():
         #     player_stats = data["stats"]
         #     player_stats["average_turns_until_win"] = (
@@ -750,10 +765,12 @@ class LudoGame:
 ENABLE_CONSOLE = False
 
 # Start game:
-# game = LudoGame(clearConsole=False, interactive=False, turnTime=0.01)
+# game = LudoGame(clearConsole=False, interactive=False, turnTime=0.01, starting_player="random")
 # game.play_game()
 
 # Start simulation:
 number_of_games = 100  # or any other number
-game_simulation = LudoGame(clearConsole=False, interactive=False, turnTime=0.0)
+game_simulation = LudoGame(
+    clearConsole=False, interactive=False, turnTime=0.0, starting_player="random"
+)
 game_simulation.simulate_games(number_of_games)
