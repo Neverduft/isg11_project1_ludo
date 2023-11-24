@@ -124,7 +124,6 @@ class MoveStrategy:
         return risk_level
 
 
-# TODO If captured, move token to end of list
 class SpeedrunStrategy(MoveStrategy):
     def select_move(
         self,
@@ -133,7 +132,19 @@ class SpeedrunStrategy(MoveStrategy):
         player_color: str,
         all_players: list[Player],
     ):
-        return legal_moves[0] if legal_moves else None
+        if len(legal_moves) == 1:  # e.g. only "spawn" move
+            return legal_moves[0]
+
+        player = next(player for player in all_players if player.color == player_color)
+        tokens = player.tokens
+
+        # Sort the board moves by the distance already traveled (moved_squares)
+        furthest_moves = sorted(
+            legal_moves, key=lambda move: tokens[move[0]].moved_squares, reverse=True
+        )
+
+        # Return the move for the token that is furthest on the board
+        return furthest_moves[0] if furthest_moves else None
 
 
 class AggressiveStrategy(MoveStrategy):
@@ -387,8 +398,8 @@ class LudoGame:
             "red": Player("red", 0, AggressiveStrategy()),
             "green": Player("green", 10, DefensiveStrategy()),
             "yellow": Player("yellow", 20, SmartStrategy()),
-            "blue": Player("blue", 30, RandomStrategy()),
-            # "blue": Player("blue", 30, SpeedrunStrategy()),
+            #    "blue": Player("blue", 30, RandomStrategy()),
+            "blue": Player("blue", 30, SpeedrunStrategy()),
         }
 
         if starting_player == "random":
@@ -769,7 +780,7 @@ ENABLE_CONSOLE = False
 # game.play_game()
 
 # Start simulation:
-number_of_games = 100  # or any other number
+number_of_games = 500  # or any other number
 game_simulation = LudoGame(
     clearConsole=False, interactive=False, turnTime=0.0, starting_player="random"
 )
