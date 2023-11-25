@@ -162,11 +162,7 @@ class AggressiveStrategy(MoveStrategy):
         if capture_move is not None:
             return capture_move
 
-        # TODO Think about including this, makes the winrate better and is logical?
-        # home_move = self.find_move(Moves.move_to_home, legal_moves)
-        # if home_move is not None:
-        #     return home_move
-
+        most_aggressive_move: tuple[int, Moves] | None = None
         move_weights: dict[tuple[int, Moves], float] = {}
         other_players: list[Player] = []
         for player in all_players:
@@ -219,14 +215,14 @@ class AggressiveStrategy(MoveStrategy):
                     for (move, weight) in move_weights.items()
                 ]
             )
-            return max(move_weights, key=move_weights.get)  # the move with max weight
+            most_aggressive_move = max(move_weights, key=move_weights.get)  # the move with max weight
 
-        # Fallback
-        ranked_moves = [
+        # To Home priority
+        home_moves = [
             self.find_move(Moves.move_to_home, legal_moves),
             self.find_move(Moves.move_inside_home, legal_moves),
         ]
-        return next((move for move in ranked_moves if move is not None), None)
+        return next((move for move in home_moves if move is not None), most_aggressive_move)
 
 
 class DefensiveStrategy(MoveStrategy):
@@ -240,11 +236,6 @@ class DefensiveStrategy(MoveStrategy):
         if len(legal_moves) == 1:  # e.g. only "spawn" move
             return legal_moves[0]
 
-        # TODO Think about including this, makes the winrate better and is logical?
-        # home_move = self.find_move(Moves.move_to_home, legal_moves)
-        # if home_move is not None:
-        #     return home_move
-
         other_players: list[Player] = []
         for player in all_players:
             if player.color == player_color:
@@ -252,25 +243,25 @@ class DefensiveStrategy(MoveStrategy):
             else:
                 other_players.append(player)
 
-        best_move: tuple[int, Moves] | None = None
+        most_defensive_move: tuple[int, Moves] | None = None
         for move in legal_moves:
             if move[1] == Moves.move_to_position or move[1] == Moves.capture_move:
                 self_token = self_player.tokens[move[0]]
-                if not best_move:
-                    best_move = move
+                if not most_defensive_move:
+                    most_defensive_move = move
                 else:
-                    best_token = self_player.tokens[best_move[0]]
+                    best_token = self_player.tokens[most_defensive_move[0]]
                     if self_token.moved_squares < best_token.moved_squares:
-                        best_move = move
-        if best_move:
-            return best_move
+                        most_defensive_move = move
+        if most_defensive_move:
+            return most_defensive_move
 
         # To Home priority
-        ranked_moves = [
+        home_moves = [
             self.find_move(Moves.move_to_home, legal_moves),
             self.find_move(Moves.move_inside_home, legal_moves),
         ]
-        return next((move for move in ranked_moves if move is not None), best_move)
+        return next((move for move in home_moves if move is not None), most_defensive_move)
 
 
 class SmartStrategy(MoveStrategy):
@@ -780,7 +771,7 @@ ENABLE_CONSOLE = False
 # game.play_game()
 
 # Start simulation:
-number_of_games = 500  # or any other number
+number_of_games = 10000  # or any other number
 game_simulation = LudoGame(
     clearConsole=False, interactive=False, turnTime=0.0, starting_player="random"
 )
