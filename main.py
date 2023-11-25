@@ -75,6 +75,8 @@ class GameStats:
         self.own_tokens_captured = 0
         self.spawns = 0
         self.total_squares_moved = 0
+        self.game_won = False
+        self.turns_until_win = 0
 
 
 ## Strategies
@@ -215,14 +217,18 @@ class AggressiveStrategy(MoveStrategy):
                     for (move, weight) in move_weights.items()
                 ]
             )
-            most_aggressive_move = max(move_weights, key=move_weights.get)  # the move with max weight
+            most_aggressive_move = max(
+                move_weights, key=move_weights.get
+            )  # the move with max weight
 
         # To Home priority
         home_moves = [
             self.find_move(Moves.move_to_home, legal_moves),
             self.find_move(Moves.move_inside_home, legal_moves),
         ]
-        return next((move for move in home_moves if move is not None), most_aggressive_move)
+        return next(
+            (move for move in home_moves if move is not None), most_aggressive_move
+        )
 
 
 class DefensiveStrategy(MoveStrategy):
@@ -261,7 +267,9 @@ class DefensiveStrategy(MoveStrategy):
             self.find_move(Moves.move_to_home, legal_moves),
             self.find_move(Moves.move_inside_home, legal_moves),
         ]
-        return next((move for move in home_moves if move is not None), most_defensive_move)
+        return next(
+            (move for move in home_moves if move is not None), most_defensive_move
+        )
 
 
 class SmartStrategy(MoveStrategy):
@@ -389,7 +397,7 @@ class LudoGame:
             "red": Player("red", 0, AggressiveStrategy()),
             "green": Player("green", 10, DefensiveStrategy()),
             "yellow": Player("yellow", 20, SmartStrategy()),
-            #    "blue": Player("blue", 30, RandomStrategy()),
+            # "blue": Player("blue", 30, RandomStrategy()),
             "blue": Player("blue", 30, SpeedrunStrategy()),
         }
 
@@ -413,7 +421,7 @@ class LudoGame:
     def next_turn(self):
         colors = list(self.players.keys())
         current_index = colors.index(self.turn)
-        self.turn = colors[(current_index + 1) % 4]
+        self.turn = colors[(current_index + 1) % len(self.players)]
 
     def move_token(self, player_color, token_index, dice_value):
         player = self.players[player_color]
@@ -711,7 +719,13 @@ class LudoGame:
             "players": {
                 color: {
                     "strategy": type(player.strategy).__name__,
-                    "stats": GameStats().to_dict(),
+                    "turns_taken": [],
+                    "tokens_captured": [],
+                    "own_tokens_captured": [],
+                    "spawns": [],
+                    "total_squares_moved": [],
+                    "games_won": [],
+                    "turns_until_win": [],
                 }
                 for color, player in self.players.items()
             },
@@ -719,26 +733,30 @@ class LudoGame:
 
         for game_number in range(number_of_games):
             print(f"Starting game {game_number + 1}...")
-            self.reset_game()  # Reset the game state before starting a new game
+            self.reset_game()
             self.play_game()
 
-            # Update batch stats with the stats from this game
+            # Append the stats from this game to the lists
             for color, player in self.players.items():
-                batch_player_stats = batch_stats["players"][color]["stats"]
-
-                batch_player_stats["turns_taken"] += player.stats.turns_taken
-                batch_player_stats["tokens_captured"] += player.stats.tokens_captured
-                batch_player_stats[
-                    "own_tokens_captured"
-                ] += player.stats.own_tokens_captured
-                batch_player_stats["spawns"] += player.stats.spawns
-                batch_player_stats[
-                    "total_squares_moved"
-                ] += player.stats.total_squares_moved
-
+                batch_player_data = batch_stats["players"][color]
+                batch_player_data["turns_taken"].append(player.stats.turns_taken)
+                batch_player_data["tokens_captured"].append(
+                    player.stats.tokens_captured
+                )
+                batch_player_data["own_tokens_captured"].append(
+                    player.stats.own_tokens_captured
+                )
+                batch_player_data["spawns"].append(player.stats.spawns)
+                batch_player_data["total_squares_moved"].append(
+                    player.stats.total_squares_moved
+                )
+                batch_player_data["games_won"].append(player.has_won())
                 if player.has_won():
-                    batch_player_stats["game_won"] = True
-                    batch_player_stats["turns_until_win"] += player.stats.turns_taken
+                    batch_player_data["turns_until_win"].append(
+                        player.stats.turns_taken
+                    )
+                else:
+                    batch_player_data["turns_until_win"].append(False)
 
         # Save the batch statistics
         self.save_batch_game_log(batch_stats)
@@ -757,7 +775,7 @@ ENABLE_CONSOLE = False
 # game.play_game()
 
 # Start simulation:
-number_of_games = 10000  # or any other number
+number_of_games = 10000
 game_simulation = LudoGame(
     clearConsole=False, interactive=False, turnTime=0.0, starting_player="random"
 )
