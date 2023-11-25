@@ -55,7 +55,7 @@ class GameStats:
         self.own_tokens_captured = 0
         self.spawns = 0
         self.total_squares_moved = 0
-        self.games_won = 0
+        self.game_won = False
         self.turns_until_win = 0
 
     def to_dict(self):
@@ -65,7 +65,7 @@ class GameStats:
             "own_tokens_captured": self.own_tokens_captured,
             "spawns": self.spawns,
             "total_squares_moved": self.total_squares_moved,
-            "games_won": self.games_won,
+            "game_won": self.game_won,
             "turns_until_win": self.turns_until_win,
         }
 
@@ -691,7 +691,7 @@ class LudoGame:
                 self.display_board()
 
                 if game_over():
-                    self.players[self.turn].stats.games_won += 1
+                    self.players[self.turn].stats.game_won = True
                     log(f"Game over! {self.turn} wins!")
                     break
 
@@ -746,22 +746,8 @@ class LudoGame:
                 ] += player.stats.total_squares_moved
 
                 if player.has_won():
-                    batch_player_stats["games_won"] += 1
+                    batch_player_stats["game_won"] = True
                     batch_player_stats["turns_until_win"] += player.stats.turns_taken
-
-        # Calculate averages outside of the game loop // Commented out as these will be calcuated for the evaluation probably
-        # for color, data in batch_stats["players"].items():
-        #     player_stats = data["stats"]
-        #     player_stats["average_turns_until_win"] = (
-        #         player_stats["turns_until_win"] / player_stats["games_won"]
-        #         if player_stats["games_won"]
-        #         else 0
-        #     )
-        #     player_stats["average_squares_moved"] = (
-        #         player_stats["total_squares_moved"] / number_of_games
-        #         if player_stats["turns_taken"]
-        #         else 0
-        #     )
 
         # Save the batch statistics
         self.save_batch_game_log(batch_stats)
