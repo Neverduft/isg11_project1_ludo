@@ -251,7 +251,7 @@ class DefensiveStrategy(MoveStrategy):
 
         most_defensive_move: tuple[int, Moves] | None = None
         for move in legal_moves:
-            if move[1] == Moves.move_to_position or move[1] == Moves.capture_move:
+            if move[1] == Moves.move_to_position:
                 self_token = self_player.tokens[move[0]]
                 if not most_defensive_move:
                     most_defensive_move = move
@@ -266,10 +266,9 @@ class DefensiveStrategy(MoveStrategy):
         home_moves = [
             self.find_move(Moves.move_to_home, legal_moves),
             self.find_move(Moves.move_inside_home, legal_moves),
+            self.find_move(Moves.capture_move, legal_moves),
         ]
-        return next(
-            (move for move in home_moves if move is not None), most_defensive_move
-        )
+        return next((move for move in home_moves if move is not None), most_defensive_move)
 
 
 class SmartStrategy(MoveStrategy):
