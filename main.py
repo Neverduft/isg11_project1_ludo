@@ -52,7 +52,7 @@ class GameStats:
     def __init__(self):
         self.turns_taken = 0
         self.tokens_captured = 0
-        self.own_tokens_captured = 0
+        self.tokens_beaten = 0
         self.spawns = 0
         self.total_squares_moved = 0
         self.game_won = False
@@ -62,7 +62,7 @@ class GameStats:
         return {
             "turns_taken": self.turns_taken,
             "tokens_captured": self.tokens_captured,
-            "own_tokens_captured": self.own_tokens_captured,
+            "tokens_beaten": self.tokens_beaten,
             "spawns": self.spawns,
             "total_squares_moved": self.total_squares_moved,
             "game_won": self.game_won,
@@ -72,7 +72,7 @@ class GameStats:
     def reset(self):
         self.turns_taken = 0
         self.tokens_captured = 0
-        self.own_tokens_captured = 0
+        self.tokens_beaten = 0
         self.spawns = 0
         self.total_squares_moved = 0
         self.game_won = False
@@ -259,8 +259,6 @@ class DefensiveStrategy(MoveStrategy):
                     best_token = self_player.tokens[most_defensive_move[0]]
                     if self_token.moved_squares < best_token.moved_squares:
                         most_defensive_move = move
-        if most_defensive_move:
-            return most_defensive_move
 
         # To Home priority
         home_moves = [
@@ -504,7 +502,7 @@ class LudoGame:
                             other_token.position = -1
                             other_token.moved_squares = 0
                             self.players[player_color].stats.tokens_captured += 1
-                            other_player.stats.own_tokens_captured += 1
+                            other_player.stats.tokens_beaten += 1
                             log(
                                 f"{player_color}'s token captured {other_color}'s token!"
                             )
@@ -720,7 +718,7 @@ class LudoGame:
                     "strategy": type(player.strategy).__name__,
                     "turns_taken": [],
                     "tokens_captured": [],
-                    "own_tokens_captured": [],
+                    "tokens_beaten": [],
                     "spawns": [],
                     "total_squares_moved": [],
                     "games_won": [],
@@ -742,8 +740,8 @@ class LudoGame:
                 batch_player_data["tokens_captured"].append(
                     player.stats.tokens_captured
                 )
-                batch_player_data["own_tokens_captured"].append(
-                    player.stats.own_tokens_captured
+                batch_player_data["tokens_beaten"].append(
+                    player.stats.tokens_beaten
                 )
                 batch_player_data["spawns"].append(player.stats.spawns)
                 batch_player_data["total_squares_moved"].append(
