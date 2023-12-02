@@ -471,7 +471,7 @@ player_metric_pie(metric_name="win_rates", title="Strategy Winrates")
 player_metric_bars(
     metric_names=["average_tokens_captured", "average_tokens_lost"],
     y_label="Tokens",
-    title="Tokens Captured/Lost by Strategy",
+    title="Average Tokens Captured/Lost by Strategy",
     colors=["lightgreen", "lightcoral"],
     labels=["Tokens Captured", "Tokens Lost"],
 )
