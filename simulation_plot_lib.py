@@ -19,7 +19,8 @@ def calculate_metrics(overwrite=False):
     with open('batch_game_log.json') as json_file:
         data = json.load(json_file)
     # Convert yellow to orange for better visibility
-    data["players"]["orange"] = data["players"].pop("yellow")
+    if "yellow" in data["players"].keys(): 
+        data["players"]["orange"] = data["players"].pop("yellow")
 
     metrics = {}
     # Extract relevant data
@@ -41,6 +42,10 @@ def calculate_metrics(overwrite=False):
         
         turns_until_win = [x for x in player_data['turns_until_win'] if x is not False]
         color_metrics["average_turns_until_win"] = np.mean(turns_until_win) if turns_until_win else 0
+
+
+        cumulative_wins = [sum(player_data['games_won'][:i+1]) for i in range(len(player_data['games_won']))]
+        color_metrics["win_rates_over_time"] =  [x / (i+1) for i, x in enumerate(cumulative_wins)]
 
         won_tokens_captured = np.zeros(max(player_data["tokens_captured"])+1)
         lost_tokens_beaten = np.zeros(max(player_data["tokens_beaten"])+1)
@@ -78,7 +83,7 @@ def player_metric_pie(metric_name: str, title: str, red = True, green = True, bl
 
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 3))
 
     y_datas = []
     for color in metrics["colors"]:
@@ -91,7 +96,7 @@ def player_metric_pie(metric_name: str, title: str, red = True, green = True, bl
             y_datas.append(y_data)
     
     plt.pie(y_datas, colors=metrics["colors"], labels=[metrics[color]["strategy"] for color in metrics["colors"]], autopct='%1.0f%%')
-    plt.title(title)
+    
 
     plt.show()
 
@@ -100,7 +105,7 @@ def player_metric_line(metric_name: str, x_label: str,  y_label: str, title: str
 
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 3))
 
     for color in metrics["colors"]:
         if enabled[color]:
@@ -110,7 +115,7 @@ def player_metric_line(metric_name: str, x_label: str,  y_label: str, title: str
     
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.title(title)
+    
 
     plt.legend()
     plt.show()
@@ -120,7 +125,7 @@ def player_metric_lines(metric_names: list[str], x_label: str,  y_label: str, ti
 
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
     
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10, 8))
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6, 4))
     axes = axes.flatten()
 
     for color_index, color in enumerate(metrics["colors"]):
@@ -137,7 +142,7 @@ def player_metric_lines(metric_names: list[str], x_label: str,  y_label: str, ti
                 ax.set_title(color_metrics["strategy"])
                 ax.legend()
 
-    plt.title(title)
+    
     plt.show()
 
 def player_metric_bar(metric_name: str, y_label: str, title: str, red = True, green = True, blue = True, orange = True):
@@ -145,7 +150,7 @@ def player_metric_bar(metric_name: str, y_label: str, title: str, red = True, gr
 
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 3))
 
     for color in metrics["colors"]:
         if enabled[color]:
@@ -158,7 +163,7 @@ def player_metric_bar(metric_name: str, y_label: str, title: str, red = True, gr
     
     plt.xlabel('Strategies')
     plt.ylabel(y_label)
-    plt.title(title)
+    
 
     plt.show()
 
@@ -167,7 +172,7 @@ def player_metric_bars(metric_names: list[str], y_label: str, title: str, colors
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
     bar_width = 0.35
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 3))
 
     for color_index, color in enumerate(metrics["colors"]):
         if enabled[color]:
@@ -184,7 +189,7 @@ def player_metric_bars(metric_names: list[str], y_label: str, title: str, colors
     plt.xticks([r + bar_width/2 for r in range(len(metrics["colors"]))], [metrics[color]["strategy"] for color in metrics["colors"]])
     plt.xlabel('Strategies')
     plt.ylabel(y_label)
-    plt.title(title)
+    
     
     # Avoid duplicate legend labels
     handles, labels = plt.gca().get_legend_handles_labels()
@@ -197,7 +202,7 @@ def player_data_histogram(data_name: str, x_label: str, y_label: str, title: str
     calculate_metrics()
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 3))
 
     included = [color for color in metrics["colors"] if enabled[color]]
 
@@ -220,7 +225,7 @@ def player_data_histogram(data_name: str, x_label: str, y_label: str, title: str
         plt.hist(y_datas, bins, label=[metrics[color]["strategy"] for color in included], color=[color for color in included], density=normalize)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.title(title)
+    
     plt.legend()
     plt.show()
     plt.show()
@@ -229,7 +234,7 @@ def player_data_gauss_fit(data_name: str, x_label: str, y_label: str, title: str
     calculate_metrics()
     enabled = {"red": red, "green": green, "blue": blue, "orange": orange}
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 3))
 
     for color in metrics["colors"]:
         if enabled[color]:
@@ -240,7 +245,7 @@ def player_data_gauss_fit(data_name: str, x_label: str, y_label: str, title: str
 
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.title(title)
+    
     plt.legend()
     plt.show()
 
@@ -332,3 +337,8 @@ player_data_gauss_fit(data_name="turns_until_win",
                       y_label="Frequency",
                       title="Distribution of Turns Until Win by Strategy",
                       resolution=100)
+
+player_metric_line(metric_name="win_rates_over_time", 
+                x_label="Games Played", 
+                y_label="Win Rate", 
+                title="Win Rates Over Time")
