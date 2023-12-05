@@ -34,6 +34,7 @@ def calculate_metrics(overwrite=False):
 
         color_metrics["strategy"] = player_data["strategy"]
 
+        color_metrics["win_rates"] =  np.mean(player_data['games_won']) / 100
 
         cumulative_wins = [sum(player_data['games_won'][:i+1]) for i in range(len(player_data['games_won']))]
         color_metrics["win_rates_over_time"] =  [x / (i+1) for i, x in enumerate(cumulative_wins)]
