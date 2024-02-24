@@ -772,7 +772,7 @@ ENABLE_CONSOLE = False
 # game.play_game()
 
 ## Start simulation:
-number_of_games = 100
+number_of_games = 1000
 game_simulation = LudoGame(
     clearConsole=False, interactive=False, turnTime=0.0, starting_player="random"
 )
