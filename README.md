@@ -14,3 +14,6 @@ The gameplay strategies to be used by the agents can be chosen within the `LudoG
 ## Plot graphs
 After running the evaluation, the results will be saved in a JSON file.
 To plot these results launch `simulation_plot_lib.py`, multiple graphs will be shown one after another.
+
+## Note
+In the visualization the board is displayed in a flattened manner, it basically represents the real game board in a simple way.
